@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="en" data-page="single">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Photon Doodle</title>
+  <meta name="description" content="Draw silicon on a photonic chip and watch the light solve in real time. Optimize reshapes every edge with the adjoint method. Five levels, three medals each.">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Photon Doodle">
+  <meta property="og:description" content="Draw silicon on a photonic chip and watch the light solve in real time. Optimize reshapes every edge with the adjoint method.">
+  <meta property="og:image" content="https://tylerflex.github.io/photon-doodle/preview.png">
+  <meta property="og:url" content="https://tylerflex.github.io/photon-doodle/">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" type="image/png" href="assets/brand/flexcompute-mark-green-black.png?v=9c24dc4863">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=STIX+Two+Text:ital,wght@0,400;0,500;0,600;1,400&family=Spline+Sans+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/games.css?v=7eda64a2e2">
+  <style>
+    /* single-page layout: a top bar with the levels, then the canvas and one panel */
+    body { overflow: hidden; box-sizing: border-box; height: 100vh; }
+    .sp-wrap { display: flex; flex-direction: column; height: 100%; }
+    /* skins that pin the app inside a frame pin the whole page there instead */
+    html[data-skin="handheld"] .sp-wrap { position: fixed; left: 36px; right: 36px; top: 48px; bottom: 106px; height: auto; z-index: 0; }
+    html[data-skin="blueprint"] .sp-wrap { position: fixed; inset: 20px; height: auto; }
+    html[data-skin] .sp-wrap .app3 { position: relative; inset: auto; }
+    .app3.sp, html[data-skin] .app3.sp { flex: 1; min-height: 0; height: auto; grid-template-columns: 210px minmax(0, 1fr) var(--rw); }
+    /* the levels: a column on the left, one big row per level */
+    .sp .lpanel .levels { gap: 6px; }
+    .sp .lpanel .lvl { padding: 10px 10px; font-size: 14px; }
+    .sp .lpanel .lvl .best { font-size: 11.5px; }
+    /* arcade pins Share to its full-page header; here it stays by the score */
+    html[data-skin="arcade"] .sp #shareB { position: static; width: auto; }
+
+    .sp-head { display: flex; align-items: center; gap: 16px; padding: 8px 16px; border-bottom: 1px solid var(--hair); background: var(--bg2); flex: none; }
+    .sp-spacer { flex: 1; }
+    .fabinfo .drc.fix { color: var(--dim); }
+    /* phones and narrow windows: the game needs room and a pointer */
+    .sp-narrow { display: none; }
+    @media (max-width: 899px), (max-height: 539px) {
+      .sp-wrap { display: none; }
+      .sp-narrow { display: flex; flex-direction: column; justify-content: center; gap: 14px; min-height: 100vh; box-sizing: border-box; padding: 32px 24px; max-width: 520px; margin: 0 auto; }
+      .sp-narrow h1 { margin: 0; font-size: 26px; }
+      .sp-narrow p { margin: 0; color: var(--dim); font-size: 15px; line-height: 1.55; }
+      .sp-narrow .sp-shot { width: 100%; height: auto; border-radius: 6px; border: 1px solid var(--hair); }
+      .sp-narrow .sp-brand { padding-left: 0; }
+    }
+    /* the company logo, small, linking to the company site; the dark-ground
+       version on dark looks and the light-ground one on light looks */
+    .sp-brand { flex: none; display: flex; align-items: center; padding: 4px 2px 4px 10px; opacity: 0.9; }
+    .sp-brand:hover { opacity: 1; }
+    .sp-brand img { height: 15px; width: auto; display: block; }
+    .sp-brand .on-light { display: none; }
+    html[data-skin="papercut"] .sp-brand .on-dark, html[data-skin="swiss"] .sp-brand .on-dark, html[data-skin="riso"] .sp-brand .on-dark { display: none; }
+    html[data-skin="papercut"] .sp-brand .on-light, html[data-skin="swiss"] .sp-brand .on-light, html[data-skin="riso"] .sp-brand .on-light { display: block; }
+    .sp-head h1 { margin: 0; font-size: 19px; white-space: nowrap; }
+    .sp-head .row { flex: none; margin: 0; }
+
+    /* a strip under the top bar holds the goal, or the walkthrough while it runs;
+       the canvas below shrinks to make room, so nothing covers the field */
+    .sp-info { flex: none; display: flex; align-items: center; gap: 14px; padding: 8px 16px; border-bottom: 1px solid var(--hair); background: var(--bg2); position: relative; z-index: 8; }
+    .sp-goal { flex: 1; min-width: 0; margin: 0; color: var(--ink); font-size: 13.5px; line-height: 1.4; }
+    #scoreWhat[title] { cursor: help; text-decoration: underline dotted; }
+    #specSec[hidden] { display: none; }
+    .sp-note { color: var(--faint); font-size: 10.5px; line-height: 1.45; margin-top: 6px; }
+    /* the spectrum lives in the panel here, not over the canvas */
+    .sp .specbox, html[data-skin] .sp .specbox { position: static; inset: auto; width: auto; transform: none; margin: 0; }
+    .sp .specbox canvas.plot { height: 130px; }
+
+    .sp-hint { flex: none; color: var(--faint); font-size: 11.5px; white-space: nowrap; }
+    .sp-iter { color: var(--faint); font-size: 11px; min-height: 1.4em; margin-top: 4px; }
+    .sp-hint b { color: var(--dim); font-weight: 500; }
+    /* Optimize is the main action: big and filled, first in the panel */
+    #optB { min-height: 54px; font-size: 17px; white-space: nowrap; }
+    #optB #optL { overflow: hidden; text-overflow: ellipsis; }
+    html:not([data-skin]) #optB, html[data-skin="lab"] #optB { background: var(--accent); border-color: var(--accent); color: var(--bg); font-weight: 600; }
+    html:not([data-skin]) #optB .k, html[data-skin="lab"] #optB .k { color: var(--bg); opacity: 0.7; }
+    html:not([data-skin]) #optB.on, html[data-skin="lab"] #optB.on { background: var(--bg3); color: var(--accent); }
+  </style>
+</head>
+<body>
+<div class="sp-narrow">
+  <h1>Photon Doodle</h1>
+  <p>Draw silicon on a photonic chip and watch the light solve in real time. It needs a laptop or desktop screen and a mouse or trackpad: open this page on a computer to play.</p>
+  <img class="sp-shot" src="preview.png" alt="Photon Doodle: light splitting through a drawn silicon Y">
+  <a class="sp-brand" href="https://flexcompute.com/tidy3d/inverse-design" target="_blank" rel="noopener" title="Photonic inverse design"><img class="on-dark" src="assets/brand/flexcompute-logo-green-white.svg?v=f19d63296a" alt="Flexcompute"></a>
+</div>
+<div class="sp-wrap">
+<header class="sp-head">
+  <h1>Photon Doodle</h1>
+  <div class="sp-spacer"></div>
+  <div class="row phb"><button id="skinB" hidden></button></div>
+  <a class="sp-brand" href="https://flexcompute.com/tidy3d/inverse-design" target="_blank" rel="noopener" title="Photonic inverse design"><img class="on-dark" src="assets/brand/flexcompute-logo-green-white.svg?v=f19d63296a" alt="Flexcompute"><img class="on-light" src="assets/brand/flexcompute-logo-green-black.svg?v=665c9dae84" alt="Flexcompute"></a>
+</header>
+<div class="sp-info" id="info">
+  <div class="sp-goal" id="goal"></div>
+  <div class="sp-hint"><b>drag</b> add silicon &middot; <b>shift-drag</b> remove &middot; <b>space</b> pause</div>
+</div>
+<div class="app3 sp" id="app">
+  <aside class="side lpanel" id="lpanel">
+    <div class="sec first">
+      <div class="lab">Levels</div>
+      <div class="levels" id="levels"></div>
+    </div>
+  </aside>
+  <div class="stage" id="stage">
+    <canvas id="cv"></canvas>
+    <div class="vtools">
+      <div class="seg" id="viewSeg">
+        <button data-v="wave" class="on" title="Animated field (v)">Re E</button>
+        <button data-v="intensity" title="Field intensity (v)">|E|&sup2;</button>
+      </div>
+      <div class="seg" id="lamSeg" style="display:none"></div>
+      <button class="btn toggle" id="sensB" title="Adjoint sensitivity inside the box: where adding silicon raises the score, and where removing it does (s)">Sensitivity</button>
+      <button class="btn toggle" id="specB" title="Port transmission against wavelength">Spectrum</button>
+    </div>
+    <div class="toast" id="toast"></div>
+    <div class="onb" id="onb">
+      <div class="onb-card">
+        <div class="onb-step" id="onbStep"></div>
+        <h2 id="onbTitle"></h2>
+        <p id="onbText"></p>
+        <div class="onb-nav"><button class="btn" id="onbBack">Back</button><span class="onb-dots" id="onbDots"></span><button class="btn" id="onbNext">Next</button></div>
+        <button class="onb-x" id="onbClose" title="Close">&times;</button>
+      </div>
+    </div>
+    <div class="medalpop" id="medalPop">
+      <div class="mp-card">
+        <div class="mp-medal" id="mpMedal"></div>
+        <div class="mp-tier" id="mpTier"></div>
+        <div class="mp-line" id="mpLine"></div>
+        <div class="mp-nav"><button class="btn" id="mpShare">Share</button><button class="btn" id="mpGo">Keep going</button></div>
+      </div>
+    </div>
+  </div>
+  <aside class="side rpanel" id="rpanel">
+    <div class="sec first">
+      <button class="btn big" id="optB" title="Gradient descent on every silicon boundary, using one adjoint solve per wavelength. You can keep drawing while it runs."><span id="optL">Optimize</span><span class="k">space</span></button>
+      <div class="sp-iter" id="iterV"></div>
+    </div>
+    <div class="sec">
+      <div class="lab">Score <span id="scoreWhat"></span></div>
+      <div class="score"><span class="v" id="scoreV">&ndash;</span><span class="u">dB</span><button class="btn share" id="shareB" title="Copy your result as text">Share</button></div>
+      <div class="ladder" id="ladder"></div>
+      <div class="fabinfo" id="fabInfo"></div>
+      <div class="bars" id="bars"></div>
+    </div>
+    <div class="sec">
+      <div class="lab">Draw</div>
+      <div class="seg full" id="toolSeg">
+        <button data-v="add" class="on" title="Add silicon (b)">Add</button>
+        <button data-v="erase" title="Remove silicon (e). Shift-drag also removes.">Remove</button>
+        <button data-v="lock" class="zt" title="Lock (l): the optimizer leaves the boundary inside alone. Shift-drag erases the zone.">Lock</button>
+        <button data-v="keep" class="zt" title="Keep out (k): no silicon inside, for you or the optimizer. Shift-drag erases the zone.">Keep out</button>
+      </div>
+      <div class="ctl inline">
+        <span>Brush</span>
+        <input type="range" id="brush" min="0.05" max="0.6" step="0.01" value="0.12" autocomplete="off" title="Brush radius (scroll or [ ])">
+        <b id="brushV"></b>
+      </div>
+      <div class="row">
+        <button class="btn" id="undoB" title="Undo (z)">Undo</button>
+        <button class="btn" id="resetB" title="Back to the level's start, without lock or keep-out zones (r)">Reset</button>
+        <button class="btn" id="clearB" title="Empty the box and remove lock and keep-out zones">Clear</button>
+      </div>
+    </div>
+    <div class="sec" id="specSec">
+      <div class="specbox" id="specBox"><canvas class="plot" id="plot"></canvas><div class="note" id="specNote"></div></div>
+    </div>
+  </aside>
+</div>
+</div>
+<!-- controls the single page leaves out; the game code still reads them -->
+<div hidden>
+  <div id="dexSec"><span id="dexCount"></span><div id="dex"></div></div>
+  <button id="fabB"></button>
+  <div id="fabView"><span id="fvTitle"></span><button id="fabClose"></button><div id="fvRow"></div></div>
+  <button id="ltab"></button><button id="rtab"></button>
+  <button id="zonesClearB"></button>
+  <button id="howB"></button>
+  <div id="targetRow"><button data-v="nominal"></button><button data-v="worst"></button></div>
+  <input type="range" id="speed" min="0.1" max="1.2" step="0.05" value="0.6"><b id="speedV"></b>
+  <input type="range" id="smooth" min="0" max="2" step="0.05" value="0.3"><b id="smoothV"></b>
+  <div id="hint"></div><div id="stats"></div>
+  <canvas id="spark" width="10" height="10"></canvas>
+  <div id="rules"></div>
+</div>
+<script>
+  // no How to play cards on this page; Optimize switches itself to all three
+  // etch cases after 100 steps of each run (game.js CD_AUTO_ETCH)
+  window.CD_GUIDE = () => {};
+  window.CD_AUTO_ETCH = 100;
+  // Optimize starts by itself: on load when the level has a starting shape,
+  // and whenever a stroke ends (game.js CD_AUTO_OPT)
+  window.CD_AUTO_OPT = true;
+  // the look before the player picks one
+  window.ODG_SKIN_ONLY = 'fchud';
+</script>
+<script src="assets/skins/skins.js?v=07b8ed4364"></script>
+<script src="engine/levelset.js?v=1a18f655e6"></script>
+<script src="levels.js?v=47ecb4c3cd"></script>
+<script src="game.js?v=827eeac232"></script>
+<script>
+  // panel sections that follow the game: the fab rules and the etch choice
+  // only on levels with fab rules, the spectrum section only while it is on
+  const sync = () => {
+    const $ = id => document.getElementById(id);
+    // the fab rules read as a hover note on what the score is
+    const fab = $('rules').style.display !== 'none' && $('rules').textContent;
+    if (fab) $('scoreWhat').title = $('rules').textContent; else $('scoreWhat').removeAttribute('title');
+    $('specSec').hidden = !$('specBox').classList.contains('show');
+  };
+  const mo = new MutationObserver(sync);
+  for (const id of ['rules', 'specBox']) mo.observe(document.getElementById(id), { attributes: true, attributeFilter: ['style', 'class'] });
+  mo.observe(document.getElementById('rules'), { childList: true, subtree: true, characterData: true });
+  sync();
+</script>
+</body>
+</html>

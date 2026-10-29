@@ -1,0 +1,176 @@
+@import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+/* hud.css : the HUD skin. Lab's layout on a navy ground, thin cyan line
+   work with corner brackets, Chakra Petch for labels and JetBrains Mono for
+   readouts. One effect: Optimize glows slowly while it runs. */
+
+html[data-skin="fchud"] {
+  --bg: #070908;
+  --bg2: #0c100e;
+  --bg3: #141a17;
+  --ink: #eef1ef;
+  --dim: #9aa6a0;
+  --faint: #64736c;
+  --hair: rgba(97, 178, 156, 0.18);
+  --hair2: rgba(97, 178, 156, 0.07);
+  --accent: #61b29c;
+  --good: #7fd3b5;
+  --warn: #fc7a4c;
+  --bad: #ff6b78;
+  --bronze: #d99060;
+  --silver: #d4dad7;
+  --gold: #ffd25e;
+  --mono: "JetBrains Mono", "SF Mono", ui-monospace, Menlo, monospace;
+  --serif: "Chakra Petch", "JetBrains Mono", sans-serif;
+  --hud: "Chakra Petch", "JetBrains Mono", sans-serif;
+  /* a corner bracket set: four L shapes, drawn as background gradients */
+  --brk: linear-gradient(var(--accent), var(--accent)) top left / 10px 1px no-repeat,
+         linear-gradient(var(--accent), var(--accent)) top left / 1px 10px no-repeat,
+         linear-gradient(var(--accent), var(--accent)) top right / 10px 1px no-repeat,
+         linear-gradient(var(--accent), var(--accent)) top right / 1px 10px no-repeat,
+         linear-gradient(var(--accent), var(--accent)) bottom left / 10px 1px no-repeat,
+         linear-gradient(var(--accent), var(--accent)) bottom left / 1px 10px no-repeat,
+         linear-gradient(var(--accent), var(--accent)) bottom right / 10px 1px no-repeat,
+         linear-gradient(var(--accent), var(--accent)) bottom right / 1px 10px no-repeat;
+}
+html[data-skin="fchud"] body {
+  background: radial-gradient(1200px 700px at 40% 30%, #0e1a14 0%, #070908 70%) fixed, #070908;
+  color: var(--ink);
+}
+html[data-skin="fchud"] ::selection { background: rgba(97, 178, 156, 0.35); color: #fff; }
+
+/* ---------------------------------------------------------------- type */
+html[data-skin="fchud"] h1,
+html[data-skin="fchud"] .sec > .lab,
+html[data-skin="fchud"] .lab,
+html[data-skin="fchud"] .btn,
+html[data-skin="fchud"] .seg button,
+html[data-skin="fchud"] .lvl,
+html[data-skin="fchud"] .mp-tier,
+html[data-skin="fchud"] .onb-card h2 { font-family: var(--hud); }
+html[data-skin="fchud"] h1 { letter-spacing: 0.06em; text-transform: uppercase; font-weight: 600; color: var(--ink); }
+html[data-skin="fchud"] .sec > .lab, html[data-skin="fchud"] .lab { color: var(--accent); letter-spacing: 0.14em; text-transform: uppercase; font-size: 10.5px; font-weight: 600; }
+html[data-skin="fchud"] .sec > .lab span, html[data-skin="fchud"] .lab span { color: var(--faint); letter-spacing: 0.04em; text-transform: none; font-family: var(--mono); font-weight: 400; }
+html[data-skin="fchud"] .goal { color: var(--ink); }
+
+/* ---------------------------------------------------------------- panels */
+html[data-skin="fchud"] .side, html[data-skin="fchud"] .panel { background: rgba(12, 16, 14, 0.86); }
+html[data-skin="fchud"] .rpanel { border-left: 1px solid var(--hair); }
+html[data-skin="fchud"] .lpanel { border-right: 1px solid var(--hair); }
+html[data-skin="fchud"] .side .sec { position: relative; }
+html[data-skin="fchud"] .side .sec + .sec { border-top: 1px solid var(--hair2); }
+html[data-skin="fchud"] .side::-webkit-scrollbar-thumb, html[data-skin="fchud"] .panel::-webkit-scrollbar-thumb { background: rgba(97, 178, 156, 0.25); }
+
+/* the stage: a bracketed viewport */
+html[data-skin="fchud"] .stage { background: transparent; }
+html[data-skin="fchud"] .stage::after {
+  content: ''; position: absolute; inset: 8px; pointer-events: none; z-index: 2;
+  background: var(--brk); opacity: 0.75;
+}
+
+/* ---------------------------------------------------------------- buttons */
+html[data-skin="fchud"] .btn {
+  background: rgba(14, 26, 46, 0.7); border: 1px solid var(--hair); color: var(--ink); border-radius: 2px;
+  letter-spacing: 0.05em;
+}
+html[data-skin="fchud"] .btn:hover { border-color: var(--accent); color: #fff; background: rgba(97, 178, 156, 0.08); }
+html[data-skin="fchud"] .btn.toggle.on { border-color: var(--accent); color: var(--accent); background: rgba(97, 178, 156, 0.12); }
+html[data-skin="fchud"] .seg { border: 1px solid var(--hair); border-radius: 2px; background: rgba(7, 9, 8, 0.6); }
+html[data-skin="fchud"] .seg button { color: var(--dim); letter-spacing: 0.05em; border-radius: 0; }
+html[data-skin="fchud"] .seg button:hover { color: var(--ink); }
+html[data-skin="fchud"] .seg button.on { color: #ffffff; background: #00643c; box-shadow: inset 0 0 0 1px var(--accent); }
+
+/* Optimize: the one lit control */
+html[data-skin="fchud"] .btn.big, html[data-skin="fchud"] #optB {
+  background: linear-gradient(180deg, #00643c 0%, #00643c 100%); border: 1px solid #61b29c; color: #ffffff;
+  font-family: var(--hud); font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; border-radius: 2px;
+  box-shadow: 0 0 18px rgba(97, 178, 156, 0.28);
+  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+}
+html[data-skin="fchud"] .btn.big .k, html[data-skin="fchud"] #optB .k { color: #ffffff; opacity: 0.7; font-family: var(--mono); letter-spacing: 0.04em; text-transform: none; font-weight: 500; }
+html[data-skin="fchud"] .btn.big:hover { filter: brightness(1.08); }
+html[data-skin="fchud"] .btn.big.on, html[data-skin="fchud"] #optB.on {
+  background: rgba(97, 178, 156, 0.1); color: var(--accent); border-color: var(--accent);
+  animation: fchud-glow 2.4s ease-in-out infinite; letter-spacing: 0.04em; text-transform: none;
+}
+html[data-skin="fchud"] .btn.big.on .k, html[data-skin="fchud"] #optB.on .k { color: var(--accent); }
+@keyframes fchud-glow {
+  0%, 100% { box-shadow: 0 0 6px rgba(97, 178, 156, 0.25), inset 0 0 10px rgba(97, 178, 156, 0.08); }
+  50% { box-shadow: 0 0 20px rgba(97, 178, 156, 0.55), inset 0 0 16px rgba(97, 178, 156, 0.16); }
+}
+@media (prefers-reduced-motion: reduce) { html[data-skin="fchud"] .btn.big.on, html[data-skin="fchud"] #optB.on { animation: none; } }
+
+/* ---------------------------------------------------------------- levels: HUD tabs */
+html[data-skin="fchud"] .lvl { border-radius: 2px; color: var(--dim); }
+html[data-skin="fchud"] .lvl:hover { background: rgba(97, 178, 156, 0.06); color: var(--ink); }
+html[data-skin="fchud"] .lvl.on { border-color: var(--accent); background: rgba(97, 178, 156, 0.1); color: var(--ink); }
+html[data-skin="fchud"] .lvl .n { color: var(--accent); font-family: var(--mono); }
+html[data-skin="fchud"] .sp-head .lvl {
+  border-radius: 2px; letter-spacing: 0.06em; text-transform: uppercase; font-size: 12px; font-weight: 600;
+  background: rgba(14, 26, 46, 0.55); color: var(--dim);
+  clip-path: polygon(7px 0, 100% 0, 100% calc(100% - 7px), calc(100% - 7px) 100%, 0 100%, 0 7px);
+}
+html[data-skin="fchud"] .sp-head .lvl > span:nth-child(2) { font-size: 12px; }
+html[data-skin="fchud"] .sp-head .lvl.on { color: #ffffff; background: #00643c; border-color: var(--accent); box-shadow: none; }
+html[data-skin="fchud"] .sp-head .lvl.on .medal { border-color: rgba(6, 12, 10, 0.5); }
+html[data-skin="fchud"] .medal { border-radius: 1px; transform: rotate(45deg); width: 8px; height: 8px; }
+html[data-skin="fchud"] .sp-head, html[data-skin="fchud"] .sp-info { background: rgba(12, 16, 14, 0.9); border-bottom-color: var(--hair); }
+html[data-skin="fchud"] .sp-head h1 { font-size: 18px; }
+html[data-skin="fchud"] .sp-head h1::before { content: ''; display: inline-block; width: 7px; height: 7px; margin-right: 9px; vertical-align: 3px; background: var(--accent); transform: rotate(45deg); box-shadow: 0 0 8px var(--accent); }
+html[data-skin="fchud"] .sp-hint b { color: var(--accent); }
+
+/* ---------------------------------------------------------------- score and the XP bar */
+html[data-skin="fchud"] .score .v { font-family: var(--mono); font-weight: 500; color: #fff; text-shadow: 0 0 14px rgba(97, 178, 156, 0.35); letter-spacing: -0.01em; }
+html[data-skin="fchud"] .score .u { color: var(--accent); font-family: var(--mono); }
+html[data-skin="fchud"] .score .v.stale { color: var(--faint); text-shadow: none; }
+html[data-skin="fchud"] .ladder .track { top: 7px; height: 6px; background: rgba(97, 178, 156, 0.08); border: 1px solid var(--hair); border-radius: 0;
+  background-image: repeating-linear-gradient(90deg, transparent 0 9px, rgba(7, 9, 8, 0.9) 9px 11px); }
+html[data-skin="fchud"] .ladder .fill { top: 7px; height: 6px; border-radius: 0; background: linear-gradient(90deg, #00643c, #61b29c 70%, #9fd6c4); box-shadow: 0 0 10px rgba(97, 178, 156, 0.5);
+  -webkit-mask: repeating-linear-gradient(90deg, #000 0 9px, transparent 9px 11px); mask: repeating-linear-gradient(90deg, #000 0 9px, transparent 9px 11px); }
+html[data-skin="fchud"] .ladder .tick { top: 5px; width: 10px; height: 10px; margin-left: -5px; border-radius: 1px; transform: rotate(45deg); border-color: rgba(97, 178, 156, 0.35); }
+html[data-skin="fchud"] .ladder .tl { font-family: var(--mono); color: var(--faint); }
+
+/* bars, etch cases, fab status */
+html[data-skin="fchud"] .bar .tr { background: rgba(97, 178, 156, 0.07); border-radius: 0; }
+html[data-skin="fchud"] .bar .tr i { background: #4b8fb3; border-radius: 0; }
+html[data-skin="fchud"] .bar.tgt .tr i { background: var(--accent); box-shadow: 0 0 8px rgba(97, 178, 156, 0.45); }
+html[data-skin="fchud"] .bar .vv { font-family: var(--mono); color: var(--ink); }
+html[data-skin="fchud"] .fabinfo .cn { border: 1px solid var(--hair); border-radius: 0; background: rgba(14, 26, 46, 0.6); }
+html[data-skin="fchud"] .fabinfo .cn .x { font-family: var(--mono); }
+html[data-skin="fchud"] .fabinfo .cn.worst { border-color: var(--bad); background: rgba(255, 107, 120, 0.08); }
+html[data-skin="fchud"] .fabinfo .drc.ok { color: var(--good); }
+html[data-skin="fchud"] .fabinfo .drc.bad { color: var(--bad); }
+html[data-skin="fchud"] .sp-iter, html[data-skin="fchud"] .note { font-family: var(--mono); }
+
+/* sliders */
+html[data-skin="fchud"] input[type=range] { accent-color: var(--accent); }
+html[data-skin="fchud"] input[type=range]::-webkit-slider-runnable-track { background: rgba(97, 178, 156, 0.18); height: 2px; border-radius: 0; }
+html[data-skin="fchud"] input[type=range]::-webkit-slider-thumb { background: var(--bg); border: 2px solid var(--accent); border-radius: 1px; transform: rotate(45deg); box-shadow: 0 0 8px rgba(97, 178, 156, 0.5); }
+
+/* the view tools and the spectrum */
+html[data-skin="fchud"] .vtools .btn, html[data-skin="fchud"] .vtools .seg { background: rgba(12, 16, 14, 0.85); }
+html[data-skin="fchud"] .specbox { background: rgba(12, 16, 14, 0.92); border: 1px solid var(--hair); border-radius: 0; }
+html[data-skin="fchud"] .sp .specbox { background: none; border: 0; }
+
+/* ---------------------------------------------------------------- cards: toast, How to play, medal, picker */
+html[data-skin="fchud"] .stage .toast { background: rgba(12, 16, 14, 0.95); border: 1px solid var(--accent); color: var(--ink); border-radius: 0; font-family: var(--mono); }
+html[data-skin="fchud"] .onb-card, html[data-skin="fchud"] .mp-card, html[data-skin="fchud"] .skinpop, html[data-skin="fchud"] .fabview {
+  background: rgba(12, 16, 14, 0.96); border: 1px solid var(--hair); border-radius: 0;
+  box-shadow: 0 0 0 1px rgba(97, 178, 156, 0.05), 0 18px 50px rgba(0, 0, 0, 0.55);
+}
+html[data-skin="fchud"] .onb-card, html[data-skin="fchud"] .mp-card { background: var(--brk), rgba(12, 16, 14, 0.96); }
+html[data-skin="fchud"] .onb-step { color: var(--accent); font-family: var(--mono); letter-spacing: 0.1em; text-transform: uppercase; }
+html[data-skin="fchud"] .onb-dots i.on { background: var(--accent); }
+html[data-skin="fchud"] .mp-tier { letter-spacing: 0.2em; text-transform: uppercase; font-weight: 700; }
+html[data-skin="fchud"] .mp-card[data-tier="g"] .mp-tier { color: var(--gold); text-shadow: 0 0 16px rgba(255, 210, 94, 0.5); }
+html[data-skin="fchud"] .mp-card[data-tier="s"] .mp-tier { color: var(--silver); text-shadow: 0 0 16px rgba(207, 224, 242, 0.4); }
+html[data-skin="fchud"] .mp-card[data-tier="b"] .mp-tier { color: var(--bronze); text-shadow: 0 0 16px rgba(217, 144, 96, 0.45); }
+html[data-skin="fchud"] .mp-line { font-family: var(--mono); color: var(--dim); }
+html[data-skin="fchud"] .skinpop button { border-radius: 0; font-family: var(--hud); letter-spacing: 0.05em; }
+html[data-skin="fchud"] .skinpop button.on { background: #00643c; color: #ffffff; }
+
+/* ---------------------------------------------------------------- other games: Ring Lock rows, coupler panel */
+html[data-skin="fchud"] .hrow.sel { border-color: var(--accent); background: rgba(97, 178, 156, 0.07); }
+html[data-skin="fchud"] .temps b, html[data-skin="fchud"] .hrow .v { font-family: var(--mono); }
+html[data-skin="fchud"] .el, html[data-skin="fchud"] .pr { border-color: var(--hair); }
+html[data-skin="fchud"] .phead .back { color: var(--faint); }
