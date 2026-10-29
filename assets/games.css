@@ -93,6 +93,7 @@ button { font: inherit; color: inherit; }
 .ladder .tick.b.hit { background: var(--bronze); border-color: var(--bronze); }
 .ladder .tick.s.hit { background: var(--silver); border-color: var(--silver); }
 .ladder .tick.g.hit { background: var(--gold); border-color: var(--gold); }
+.ladder .bestmark { position: absolute; top: 2px; width: 2px; height: 17px; margin-left: -1px; background: var(--ink); opacity: 0.55; border-radius: 1px; z-index: 1; }
 .ladder .tl { position: absolute; top: 18px; font-size: 9px; color: var(--faint); transform: translateX(-50%); }
 canvas.spark { width: 100%; height: 46px; display: block; }
 

@@ -40,6 +40,9 @@
   let rateT = 0, rateN = 0, itRate = 0;
   let fabOpen = false, curKey = null;
   const best = loadJSON('odg.component.best');
+  // the design behind each level's best score (design box only, encPhi), for
+  // the share card
+  const bestDesign = loadJSON('odg.component.designs.v1');
   const dexAll = loadJSON('odg.component.dex.v1');
 
   function loadJSON(k) { try { return JSON.parse(localStorage.getItem(k) || '{}'); } catch (e) { return {}; } }
@@ -72,7 +75,7 @@
   }
   function buildLadder(L) {
     const el = $('ladder');
-    el.innerHTML = '<div class="track"></div><div class="fill" id="ladFill"></div>';
+    el.innerHTML = '<div class="track"></div><div class="fill" id="ladFill"></div><div class="bestmark" id="ladBest" title="Your best"></div>';
     const pos = [40, 70, 90], cls = ['b', 's', 'g'];
     L.medals.forEach((m, k) => {
       const t = document.createElement('div'); t.className = 'tick ' + cls[k]; t.style.left = pos[k] + '%'; t.id = 'tick' + k;
@@ -145,13 +148,17 @@
   // drawn shape for n steps, then on all three etch cases, in place of the
   // As drawn / Worst etch choice
   let optFrom = 0, runBest = null;
+  // the player's own pause holds: auto-optimize (CD_AUTO_OPT) starts nothing
+  // while it is set, until the player presses Optimize again
+  let heldPause = false;
+  function toggleOpt() { heldPause = optimizing; setOpt(!optimizing); }
   function setOpt(on, silent) {
     if (on !== optimizing) emit('opt', { on });
     if (on && !optimizing) runBest = null;
     if (on && !optimizing && window.CD_AUTO_ETCH && LEVELS[li].rules) { optFrom = st ? st.iter : 0; if (robust) setRobust(false); }
     optimizing = on;
     $('optB').classList.toggle('on', on);
-    $('optL').textContent = on ? 'Optimizing… (pause)' : 'Optimize';
+    $('optL').textContent = on ? 'Optimizing… (pause)' : heldPause && window.CD_AUTO_OPT ? 'Resume' : 'Optimize';
     if (on && phi) pushUndo();
     if (!silent) worker.postMessage({ type: 'opt', on });
     rateT = performance.now(); rateN = 0;
@@ -189,7 +196,7 @@
       layout();
       // window.CD_AUTO_OPT (single.html): a level that starts with a shape
       // optimizes as soon as it loads
-      if (window.CD_AUTO_OPT && LEVELS[li].init !== 'empty') setOpt(true);
+      if (window.CD_AUTO_OPT && !heldPause && LEVELS[li].init !== 'empty') setOpt(true);
       return;
     }
     if (m.type === 'state') {
@@ -235,9 +242,12 @@
   // level was opened, whether or not it beats the saved best
   const RANK = { '': 0, b: 1, s: 2, g: 3 };
   let shownTier = '';
-  function award(L, s) {
+  function award(L, s, ph) {
     const key = bestKey(L), prev = best[key], now = medalOf(L, s);
-    if (prev == null || s > prev + 1e-3) { best[key] = s; saveJSON('odg.component.best', best); buildLevels(); }
+    if (prev == null || s > prev + 1e-3) {
+      best[key] = s; saveJSON('odg.component.best', best); buildLevels();
+      if (ph && geo) { bestDesign[key] = { s, phi: encPhi(ph) }; saveJSON('odg.component.designs.v1', bestDesign); }
+    }
     if (now && RANK[now] > RANK[shownTier]) { shownTier = now; medalPop(L, now, s); emit('medal', { tier: now }); return true; }
     return false;
   }
@@ -287,7 +297,119 @@
       'Optical Design Games',
     ].filter(Boolean).join('\n');
   }
+  // ---- the whole game's share card: one tile per level with the structure
+  // behind the best score, the medal and the score; its text version; and
+  // the window that shows both (single.html's #sharePop)
+  const SITE = () => window.CD_SITE || location.href.split('#')[0];
+  const MEDAL_EMO = { g: '🥇', s: '🥈', b: '🥉' };
+  function levelResult(L) {
+    const key = bestKey(L), sc = best[key];
+    return { sc, md: sc == null ? '' : medalOf(L, sc), entry: bestDesign[key] || null };
+  }
+  function shareAllText() {
+    const res = LEVELS.map(levelResult);
+    const n = res.filter(r => r.md).length;
+    return [
+      `Photon Doodle ${res.map(r => MEDAL_EMO[r.md] || '⬜').join('')}`,
+      ...LEVELS.map((L, k) => {
+        const r = res[k];
+        return `${MEDAL_EMO[r.md] || '⬜'} ${L.title}: ${r.sc == null ? 'not played yet' : r.sc.toFixed(2) + ' dB' + (r.md ? '' : ', no medal yet')}`;
+      }),
+      `${n} of ${LEVELS.length} levels with a medal`,
+      SITE(),
+    ].join('\n');
+  }
+  // a picture of a level's structure: the design box (the saved best design,
+  // or empty) with its port waveguides, silicon light on the card's ground
+  function thumb(L, entry, size) {
+    const [i0, i1, j0, j1] = L.design, w = i1 - i0, h = j1 - j0, M = 7, RW = w + 2 * M, RH = h + 2 * M;
+    const des = entry ? decPhi(entry.phi) : null, F = new Float32Array(RW * RH);
+    for (let a = 0; a < RW; a++) for (let b = 0; b < RH; b++) {
+      const i = i0 - M + a, j = j0 - M + b, inBox = i >= i0 && i < i1 && j >= j0 && j < j1;
+      F[b + a * RH] = inBox ? (des ? des[(j - j0) + (i - i0) * h] : -0.05) : LS.sdShapes((i + 0.5) * D, (j + 0.5) * D, L.fixed);
+    }
+    const c = document.createElement('canvas'); c.width = c.height = size;
+    const g = c.getContext('2d'), img = g.createImageData(size, size), sc = size / Math.max(RW, RH);
+    const ox = (size - RW * sc) / 2, oy = (size - RH * sc) / 2, si = rgb('accent'), bg = rgb('bg');
+    for (let px = 0; px < size; px++) for (let py = 0; py < size; py++) {
+      const u = (px + 0.5 - ox) / sc - 0.5, v = (size - py - 0.5 - oy) / sc - 0.5;
+      let val = -1;
+      if (u >= 0 && v >= 0 && u <= RW - 1 && v <= RH - 1) {
+        const a = Math.min(RW - 2, Math.floor(u)), b = Math.min(RH - 2, Math.floor(v)), fu = u - a, fv = v - b;
+        val = (1 - fu) * ((1 - fv) * F[b + a * RH] + fv * F[b + 1 + a * RH]) + fu * ((1 - fv) * F[b + (a + 1) * RH] + fv * F[b + 1 + (a + 1) * RH]);
+      }
+      const t = Math.max(0, Math.min(1, 0.5 + val / (1.2 / sc * D))), q = 4 * (px + py * size);
+      for (let k = 0; k < 3; k++) img.data[q + k] = Math.round(bg[k] + (si[k] - bg[k]) * t);
+      img.data[q + 3] = 255;
+    }
+    g.putImageData(img, 0, 0);
+    g.strokeStyle = col('boxLine', 0.55); g.setLineDash([4, 4]); g.lineWidth = 1;
+    g.strokeRect(ox + M * sc, oy + M * sc, w * sc, h * sc);
+    return c;
+  }
+  function shareCard() {
+    const W = 1200, H = 630, c = document.createElement('canvas'); c.width = W; c.height = H;
+    const g = c.getContext('2d'), fam = getComputedStyle(document.body).fontFamily;
+    const res = LEVELS.map(levelResult), n = res.filter(r => r.md).length;
+    g.fillStyle = col('bg'); g.fillRect(0, 0, W, H);
+    g.fillStyle = col('ink'); g.font = `600 40px ${fam}`; g.textBaseline = 'alphabetic';
+    g.fillText('Photon Doodle', 48, 84);
+    g.fillStyle = col('dim'); g.font = `18px ${fam}`;
+    g.fillText(`${n} of ${LEVELS.length} levels with a medal`, 48, 118);
+    const tw = 208, gap = 14, x0 = (W - (LEVELS.length * tw + (LEVELS.length - 1) * gap)) / 2, ty = 160;
+    const tier = { g: [col('gold'), 'Gold'], s: [col('silver'), 'Silver'], b: [col('bronze'), 'Bronze'] };
+    LEVELS.forEach((L, k) => {
+      const x = x0 + k * (tw + gap), r = res[k];
+      g.fillStyle = col('panel'); g.fillRect(x, ty, tw, 360);
+      g.strokeStyle = r.md ? tier[r.md][0] : col('ink', 0.12); g.lineWidth = r.md ? 2 : 1; g.strokeRect(x + 0.5, ty + 0.5, tw - 1, 359);
+      g.drawImage(thumb(L, r.entry, tw - 16), x + 8, ty + 8);
+      g.fillStyle = col('ink'); g.font = `600 17px ${fam}`; g.fillText(L.title, x + 12, ty + tw + 30);
+      if (r.md) {
+        g.fillStyle = tier[r.md][0]; g.beginPath(); g.arc(x + 22, ty + tw + 62, 9, 0, 2 * Math.PI); g.fill();
+        g.font = `600 15px ${fam}`; g.fillText(tier[r.md][1], x + 38, ty + tw + 67);
+      } else { g.fillStyle = col('faint'); g.font = `15px ${fam}`; g.fillText(r.sc == null ? 'Not played yet' : 'No medal yet', x + 12, ty + tw + 67); }
+      if (r.sc != null) { g.fillStyle = col('dim'); g.font = `15px ${fam}`; g.fillText(`${r.sc.toFixed(2)} dB`, x + 12, ty + tw + 96); }
+      if (!r.entry && r.sc != null) { g.fillStyle = col('faint'); g.font = `12px ${fam}`; g.fillText('design not saved', x + 12, ty + tw + 120); }
+    });
+    g.fillStyle = col('faint'); g.font = `16px ${fam}`;
+    g.fillText(SITE().replace(/^https?:\/\//, '').replace(/\/$/, ''), 48, H - 40);
+    // the page's logo (single.html), bottom right, when it has loaded
+    const logo = document.querySelector('.sp-brand .on-dark');
+    if (logo && logo.complete && logo.naturalWidth) { const lh = 22, lw = lh * logo.naturalWidth / logo.naturalHeight; g.drawImage(logo, W - 48 - lw, H - 40 - lh + 4, lw, lh); }
+    return c;
+  }
+  async function copyText(t) {
+    try { await navigator.clipboard.writeText(t); return true; } catch (e) {
+      const a = document.createElement('textarea'); a.value = t; a.style.position = 'fixed'; a.style.opacity = '0';
+      document.body.appendChild(a); a.select();
+      let ok = false; try { ok = document.execCommand('copy'); } catch (e2) { ok = false; }
+      a.remove(); return ok;
+    }
+  }
+  let cardCv = null;
+  function openShare() {
+    cardCv = shareCard();
+    $('shImg').src = cardCv.toDataURL('image/png');
+    $('shTxt').textContent = shareAllText();
+    $('medalPop').classList.remove('show');
+    $('sharePop').classList.add('show');
+  }
+  if ($('sharePop')) {
+    $('shCopyText').onclick = async () => toast(await copyText(shareAllText()) ? 'Copied the text. Paste it anywhere.' : 'Copy failed: the browser blocked the clipboard');
+    $('shCopyImg').onclick = async () => {
+      try {
+        const blob = await new Promise(r => cardCv.toBlob(r, 'image/png'));
+        await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+        toast('Copied the image. Paste it into a post or chat.');
+      } catch (e) { toast('This browser cannot copy images: use Download'); }
+    };
+    $('shDownload').onclick = () => { const a = document.createElement('a'); a.href = cardCv.toDataURL('image/png'); a.download = 'photon-doodle.png'; a.click(); };
+    $('shClose').onclick = () => $('sharePop').classList.remove('show');
+    $('sharePop').onclick = e => { if (e.target === $('sharePop')) $('sharePop').classList.remove('show'); };
+  }
+
   async function share() {
+    if ($('sharePop')) { openShare(); return; }
     const t = shareText();
     if (!t) { toast('Finish a design first: there is no score on this level yet'); return; }
     let ok = false;
@@ -332,7 +454,7 @@
     const clean = m.fab.nThin + m.fab.nGap === 0;
     buildDrc(m.fab);
     if (optimizing) { hist.push(m.worst); if (hist.length > 400) hist.shift(); }
-    const medal = clean ? award(L, m.worst) : false;
+    const medal = clean ? award(L, m.worst, m.phi) : false;
     recordDex(L, m, clean, medal);
     updatePanel();
   }
@@ -355,13 +477,18 @@
       }
       renderFabInfo(L, stale);
     } else {
-      award(L, m.score);
+      award(L, m.score, m.phi);
       if (window.CD_AUTO_ETCH && optimizing) { if (runBest == null || m.score > runBest) runBest = m.score; shown = runBest; }
     }
     $('scoreV').textContent = shown == null ? '–' : shown.toFixed(2);
     $('scoreV').classList.toggle('stale', stale);
     $('ladFill').style.width = (shown == null ? 0 : ladderPos(L, shown)) + '%';
-    for (let k = 0; k < 3; k++) $('tick' + k).classList.toggle('hit', shown != null && eligible && shown >= L.medals[k]);
+    // a medal once earned stays lit (the saved best), and a mark shows where
+    // the best score sits while the current design is below it
+    const bestv = best[bestKey(L)];
+    for (let k = 0; k < 3; k++) $('tick' + k).classList.toggle('hit', (shown != null && eligible && shown >= L.medals[k]) || (bestv != null && bestv >= L.medals[k]));
+    $('ladBest').style.display = bestv == null ? 'none' : '';
+    if (bestv != null) { $('ladBest').style.left = ladderPos(L, bestv) + '%'; $('ladBest').title = `Your best: ${bestv.toFixed(2)} dB`; }
     if (window.CD_AUTO_ETCH && optimizing && L.rules && !robust && m.iter - optFrom >= window.CD_AUTO_ETCH) setRobust(true);
     $('iterV').textContent = m.iter ? `iteration ${m.iter}` + (window.CD_AUTO_ETCH && L.rules && optimizing ? (robust ? ' · all 3 etch cases' : ' · drawn shape') : '') : '';
     // port bars
@@ -954,7 +1081,7 @@
     // auto-optimize: finishing a stroke starts Optimize, and during a run it
     // goes back to the drawn shape for the next steps, so the edit is taken
     // up quickly
-    if (window.CD_AUTO_OPT) {
+    if (window.CD_AUTO_OPT && !heldPause) {
       if (!optimizing) setOpt(true);
       else if (window.CD_AUTO_ETCH && LEVELS[li].rules) { optFrom = st ? st.iter : 0; if (robust) setRobust(false); }
     }
@@ -997,7 +1124,7 @@
   $('brushV').textContent = (brushR * 1000).toFixed(0) + ' nm';
   $('speed').addEventListener('input', sendParams);
   $('smooth').addEventListener('input', sendParams);
-  $('optB').onclick = () => setOpt(!optimizing);
+  $('optB').onclick = toggleOpt;
   $('undoB').onclick = doUndo;
   // the single page has no Clear zones button: Reset and Clear take the zones too
   const zonesToo = () => { if (document.documentElement.dataset.page === 'single') clearZones(); };
@@ -1032,7 +1159,7 @@
     if (e.target.tagName === 'INPUT' && e.target.type !== 'range') return;
     const k = e.key.toLowerCase(), R = LEVELS[li].rules;
     if ($('onb').classList.contains('show') && !['escape', 'arrowright', 'arrowleft', 'enter'].includes(k)) return;
-    if (k === ' ') { e.preventDefault(); setOpt(!optimizing); }
+    if (k === ' ') { e.preventDefault(); toggleOpt(); }
     else if (k >= '1' && k <= String(LEVELS.length)) loadLevel(+k - 1);
     else if (k === 'b' || k === 'a') setTool('add');
     else if (k === 'e' || k === 'd') setTool('erase');
@@ -1044,7 +1171,7 @@
     else if (k === 's') setSens(!showSens);
     else if (k === 'f' && R) setFab(!fabOpen);
     else if (k === 'w' && R) setRobust(!robust);
-    else if (k === 'escape') { if ($('onb').classList.contains('show')) onbClose(); else if (fabOpen) setFab(false); $('medalPop').classList.remove('show'); }
+    else if (k === 'escape') { if ($('sharePop')) $('sharePop').classList.remove('show'); if ($('onb').classList.contains('show')) onbClose(); else if (fabOpen) setFab(false); $('medalPop').classList.remove('show'); }
     else if ($('onb').classList.contains('show') && (k === 'arrowright' || k === 'enter')) $('onbNext').onclick();
     else if ($('onb').classList.contains('show') && k === 'arrowleft') onb(onbAt - 1);
     else if (k === '[') { brushR = Math.max(0.05, brushR / 1.2); $('brush').value = brushR; $('brushV').textContent = (brushR * 1000).toFixed(0) + ' nm'; }

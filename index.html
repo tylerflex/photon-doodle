@@ -15,7 +15,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=STIX+Two+Text:ital,wght@0,400;0,500;0,600;1,400&family=Spline+Sans+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="assets/games.css?v=7eda64a2e2">
+  <link rel="stylesheet" href="assets/games.css?v=dccc49e8a4">
   <style>
     /* single-page layout: a top bar with the levels, then the canvas and one panel */
     body { overflow: hidden; box-sizing: border-box; height: 100vh; }
@@ -35,6 +35,13 @@
     .sp-head { display: flex; align-items: center; gap: 16px; padding: 8px 16px; border-bottom: 1px solid var(--hair); background: var(--bg2); flex: none; }
     .sp-spacer { flex: 1; }
     .fabinfo .drc.fix { color: var(--dim); }
+    /* the share window: the card image, its text, and copy or download */
+    .sharepop { position: fixed; inset: 0; z-index: 40; display: none; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.6); }
+    .sharepop.show { display: flex; }
+    .sh-card { width: min(880px, calc(100vw - 48px)); max-height: calc(100vh - 48px); overflow: auto; display: flex; flex-direction: column; gap: 12px; padding: 18px; background: var(--bg2); border: 1px solid var(--hair); border-radius: 8px; }
+    .sh-card img { width: 100%; height: auto; border: 1px solid var(--hair); border-radius: 4px; }
+    .sh-txt { margin: 0; padding: 10px 12px; font-size: 12px; line-height: 1.5; white-space: pre-wrap; color: var(--dim); background: var(--bg); border: 1px solid var(--hair); border-radius: 4px; }
+    .sh-card .row { display: flex; flex-wrap: wrap; gap: 8px; }
     /* phones and narrow windows: the game needs room and a pointer */
     .sp-narrow { display: none; }
     @media (max-width: 899px), (max-height: 539px) {
@@ -89,7 +96,7 @@
 <header class="sp-head">
   <h1>Photon Doodle</h1>
   <div class="sp-spacer"></div>
-  <div class="row phb"><button id="skinB" hidden></button></div>
+  <div class="row phb"><button class="btn howb" id="shareAllB" title="Your medals and structures, to copy or download">Share</button><button id="skinB" hidden></button></div>
   <a class="sp-brand" href="https://flexcompute.com/tidy3d/inverse-design" target="_blank" rel="noopener" title="Photonic inverse design"><img class="on-dark" src="assets/brand/flexcompute-logo-green-white.svg?v=f19d63296a" alt="Flexcompute"><img class="on-light" src="assets/brand/flexcompute-logo-green-black.svg?v=665c9dae84" alt="Flexcompute"></a>
 </header>
 <div class="sp-info" id="info">
@@ -122,6 +129,14 @@
         <p id="onbText"></p>
         <div class="onb-nav"><button class="btn" id="onbBack">Back</button><span class="onb-dots" id="onbDots"></span><button class="btn" id="onbNext">Next</button></div>
         <button class="onb-x" id="onbClose" title="Close">&times;</button>
+      </div>
+    </div>
+    <div class="sharepop" id="sharePop">
+      <div class="sh-card">
+        <div class="lab">Share your results</div>
+        <img id="shImg" alt="Your medals and the structures you found">
+        <pre class="sh-txt" id="shTxt"></pre>
+        <div class="row"><button class="btn" id="shCopyText">Copy text</button><button class="btn" id="shCopyImg">Copy image</button><button class="btn" id="shDownload">Download image</button><button class="btn" id="shClose">Close</button></div>
       </div>
     </div>
     <div class="medalpop" id="medalPop">
@@ -193,13 +208,15 @@
   // Optimize starts by itself: on load when the level has a starting shape,
   // and whenever a stroke ends (game.js CD_AUTO_OPT)
   window.CD_AUTO_OPT = true;
+  // the address a shared result points to
+  window.CD_SITE = 'https://tylerflex.github.io/photon-doodle/';
   // the look before the player picks one
   window.ODG_SKIN_ONLY = 'fchud';
 </script>
 <script src="assets/skins/skins.js?v=07b8ed4364"></script>
 <script src="engine/levelset.js?v=1a18f655e6"></script>
 <script src="levels.js?v=47ecb4c3cd"></script>
-<script src="game.js?v=827eeac232"></script>
+<script src="game.js?v=95106bf9e8"></script>
 <script>
   // panel sections that follow the game: the fab rules and the etch choice
   // only on levels with fab rules, the spectrum section only while it is on
@@ -210,6 +227,7 @@
     if (fab) $('scoreWhat').title = $('rules').textContent; else $('scoreWhat').removeAttribute('title');
     $('specSec').hidden = !$('specBox').classList.contains('show');
   };
+  document.getElementById('shareAllB').onclick = () => document.getElementById('shareB').click();
   const mo = new MutationObserver(sync);
   for (const id of ['rules', 'specBox']) mo.observe(document.getElementById(id), { attributes: true, attributeFilter: ['style', 'class'] });
   mo.observe(document.getElementById('rules'), { childList: true, subtree: true, characterData: true });
