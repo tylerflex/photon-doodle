@@ -21,7 +21,7 @@
  * the sensitivity shown to the player) is averaged over the images of each
  * cell, and phi is re-averaged after each change to stop round-off drift.
  */
-importScripts('engine/fdfd.js?v=6f8f303061', 'engine/levelset.js?v=1a18f655e6', 'levels.js?v=47ecb4c3cd');
+importScripts('engine/fdfd.js?v=6f8f303061', 'engine/levelset.js?v=1a18f655e6', 'levels.js?v=3f6a8824e8');
 
 const { D, NC, NS, PML, LEVELS } = self.COMPONENT_LEVELS;
 const EC = NC * NC, ES = NS * NS, DE = EC - ES;

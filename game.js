@@ -19,10 +19,10 @@
   skinColors();
 
   // ------------------------------------------------------------- state
-  const worker = new Worker('worker.js?v=e60eff5f15');
+  const worker = new Worker('worker.js?v=7c20b5f562');
   // a second worker sweeps the spectrum of the latest design, so the curve
   // follows the drawing and the optimizer without slowing either
-  const specWorker = new Worker('worker.js?v=e60eff5f15');
+  const specWorker = new Worker('worker.js?v=7c20b5f562');
   let specSent = 0, specBusy = false, specStale = false, specPart = null;
   const cv = $('cv'), ctx = cv.getContext('2d');
   let li = 0, geo = null, mask = null;
@@ -238,12 +238,13 @@
     specSent++;
   }
 
-  // the medal card shows each tier the first time it is reached since the
-  // level was opened, whether or not it beats the saved best
+  // the medal card shows once, the first time a tier above the saved best's
+  // is earned; earning a tier again after losing it stays quiet
   const RANK = { '': 0, b: 1, s: 2, g: 3 };
   let shownTier = '';
   function award(L, s, ph) {
     const key = bestKey(L), prev = best[key], now = medalOf(L, s);
+    if (shownTier === '' && prev != null) shownTier = medalOf(L, prev);
     if (prev == null || s > prev + 1e-3) {
       best[key] = s; saveJSON('odg.component.best', best); buildLevels();
       if (ph && geo) { bestDesign[key] = { s, phi: encPhi(ph) }; saveJSON('odg.component.designs.v1', bestDesign); }
@@ -529,7 +530,7 @@
       : ok ? `<div class="drc ok">Fab check passed (${mf})</div>`
         : `<div class="drc bad">Not scored: ${parts.join(', ')} under ${mf}</div>`;
     // the single page says how to fix it (one fixed line, so nothing moves)
-    const fix = !window.CD_AUTO_OPT ? '' : `<div class="drc fix">${stale || ok ? '' : f.gapSpots && f.thinSpots ? 'Draw or erase at the marked spots'
+    const fix = document.documentElement.dataset.page !== 'single' ? '' : `<div class="drc fix">${stale || ok ? '' : f.gapSpots && f.thinSpots ? 'Draw or erase at the marked spots'
       : f.gapSpots ? 'Fill or widen the marked gap' : 'Thicken the marked spot'}</div>`;
     el.innerHTML = `<div class="corners">${cells}</div>${drc}${fix}`;
   }

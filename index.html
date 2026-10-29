@@ -101,7 +101,7 @@
 </header>
 <div class="sp-info" id="info">
   <div class="sp-goal" id="goal"></div>
-  <div class="sp-hint"><b>drag</b> add silicon &middot; <b>shift-drag</b> remove &middot; <b>space</b> pause</div>
+  <div class="sp-hint"><b>drag</b> add silicon &middot; <b>shift-drag</b> remove &middot; <b>space</b> optimize</div>
 </div>
 <div class="app3 sp" id="app">
   <aside class="side lpanel" id="lpanel">
@@ -205,9 +205,8 @@
   // etch cases after 100 steps of each run (game.js CD_AUTO_ETCH)
   window.CD_GUIDE = () => {};
   window.CD_AUTO_ETCH = 100;
-  // Optimize starts by itself: on load when the level has a starting shape,
-  // and whenever a stroke ends (game.js CD_AUTO_OPT)
-  window.CD_AUTO_OPT = true;
+  // Optimize runs only when the player starts it (game.js CD_AUTO_OPT, off)
+  window.CD_AUTO_OPT = false;
   // the address a shared result points to
   window.CD_SITE = 'https://tylerflex.github.io/photon-doodle/';
   // the look before the player picks one
@@ -215,8 +214,8 @@
 </script>
 <script src="assets/skins/skins.js?v=07b8ed4364"></script>
 <script src="engine/levelset.js?v=1a18f655e6"></script>
-<script src="levels.js?v=47ecb4c3cd"></script>
-<script src="game.js?v=95106bf9e8"></script>
+<script src="levels.js?v=3f6a8824e8"></script>
+<script src="game.js?v=80bb52fe65"></script>
 <script>
   // panel sections that follow the game: the fab rules and the etch choice
   // only on levels with fab rules, the spectrum section only while it is on

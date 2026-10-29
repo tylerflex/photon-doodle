@@ -85,9 +85,11 @@
       // calibration (tests/calibrate_fab.mjs ... two100, 2026-10-23, with the
       // top-bottom mirror; the single page's Optimize: 100 steps as drawn,
       // then all 3 etch cases): the empty box never ends clean, an MMI block
-      // -3.4 dB, random starts -0.14 to -2.9, a long Y -0.17, drawn Ys
-      // -0.088 to -0.101 (with the adaptive step cap in the etch phase)
-      medals: [-0.3, -0.15, -0.105],
+      // -3.4 dB, random starts -0.14 to -2.9, a long Y -0.16, drawn Ys
+      // -0.083 to -0.10 (with the adaptive step cap in the etch phase; 600
+      // steps change these by under 0.01). Gold needs the better Y (a trunk
+      // before the fork, -0.083); a quick Y earns silver
+      medals: [-0.25, -0.12, -0.085],
     },
     Object.assign(makeBend(31), {
       id: 'bend', title: 'Bend', v: 1, rules: FAB, sym: 'adiag',
@@ -98,7 +100,7 @@
     }),
     {
       id: 'crossing', title: 'Crossing', v: 1,
-      goal: 'Let the left-right guide cross the vertical guide with the least loss into the through port. A crossing has to work from all four ports, so the box looks the same from each: whatever you draw is mirrored across both guides and both diagonals.',
+      goal: 'Let the left-right guide cross the vertical guide with the least loss into the through port. A crossing has to work from all four ports, so the box looks the same from each: whatever you draw is mirrored across both guides and both diagonals. The box starts empty.',
       nx: 107, ny: 107, design: [28, 79, 28, 79], lambdas: [1.55], sym: 'c4v', rules: FAB,
       // smoothing 0.2: at 0.05 or 0.1 the optimizer leaves gaps under 150 nm,
       // and the plain cross, optimized as drawn then on the worst etch case,
@@ -109,9 +111,12 @@
         { box: [-1, c(53) - H, 7, c(53) + H] },
         { box: [c(53) - H, -1, c(53) + H, 7] },
       ],
-      // the plain cross: Optimize from it earns bronze, while from an empty
-      // box the optimizer never joins the four guides (-1.4 dB)
-      init: [
+      // the box starts empty (2026-10-29: a plain-cross start gave a medal
+      // for one click); the plain cross is the sketch: drawn and optimized it
+      // earns bronze, while from the empty box the optimizer never joins the
+      // four guides (-1.4 dB)
+      init: 'empty',
+      sketch: [
         { box: [1.0, c(53) - H, 4.4, c(53) + H] },
         { box: [c(53) - H, 1.0, c(53) + H, 4.4] },
       ],
@@ -134,23 +139,24 @@
     },
     {
       id: 'converter', title: 'Mode converter',
-      goal: 'Convert the fundamental mode into the odd (TE1) mode of the wide output guide. An odd mode needs an asymmetric device.',
+      goal: 'Convert the fundamental mode into the odd (TE1) mode of the wide output guide. An odd mode needs an asymmetric device. The box starts empty.',
       nx: 107, ny: 95, design: [28, 79, 22, 73], lambdas: [1.55],
       fixed: [
         { box: [-1, c(47) - H, c(53), c(47) + H] },
         { box: [c(53), c(47) - 0.5, 7, c(47) + 0.5] },
       ],
-      init: [
-        { poly: [[1.0, c(47) - H], [2.0, c(47) - H], [4.3, c(47) - 0.5], [4.3, c(47) + 0.5], [2.0, c(47) + H], [1.0, c(47) + H]] },
-        { cap: [2.6, c(47) + 0.42, 3.2, c(47) + 0.42, 0.14] },
-      ],
+      // the box starts empty (2026-10-29: the old start, a taper with a bump,
+      // reached gold by itself). 600-step Optimize runs: empty -0.49 dB, a
+      // straight guide -0.085, an offset guide -0.059, a guide split in two
+      // with a bump -0.034
+      init: 'empty',
       ports: [
         { name: 'in', role: 'in', axis: 'x', idx: 15, ref: 13, lo: 27, hi: 68 },
         { name: 'TE1', axis: 'x', idx: 91, lo: 25, hi: 70, order: 1 },
         { name: 'TE0', axis: 'x', idx: 91, lo: 25, hi: 70, order: 0, info: true },
       ],
       targets: [{ port: 1, lam: 0, share: 1 }],
-      medals: [-1.0, -0.4, -0.15],
+      medals: [-0.12, -0.07, -0.04],
     },
     {
       id: 'demux', title: 'Wavelength demux',
