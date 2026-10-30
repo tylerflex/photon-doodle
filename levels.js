@@ -156,7 +156,13 @@
         { name: 'TE0', axis: 'x', idx: 91, lo: 25, hi: 70, order: 0, info: true },
       ],
       targets: [{ port: 1, lam: 0, share: 1 }],
-      medals: [-0.12, -0.07, -0.04],
+      // smoothing 0.05 (2026-10-30): at 0.3 a taper with a notch peaked at
+      // 98.4% TE1 and then eroded to 94%; at 0.05 it reached 99.6%. Medals
+      // from 600-step runs at 0.05 keep each start's tier: empty -0.147,
+      // straight -0.030, offset -0.018, split with a bump -0.006. (The demux
+      // keeps 0.3: at 0.05 its untouched start reached gold, -0.77 vs -1.55.)
+      smooth: 0.05,
+      medals: [-0.12, -0.02, -0.01],
     },
     {
       id: 'demux', title: 'Wavelength demux',

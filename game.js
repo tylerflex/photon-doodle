@@ -19,10 +19,10 @@
   skinColors();
 
   // ------------------------------------------------------------- state
-  const worker = new Worker('worker.js?v=7c20b5f562');
+  const worker = new Worker('worker.js?v=3950661fbe');
   // a second worker sweeps the spectrum of the latest design, so the curve
   // follows the drawing and the optimizer without slowing either
-  const specWorker = new Worker('worker.js?v=7c20b5f562');
+  const specWorker = new Worker('worker.js?v=3950661fbe');
   let specSent = 0, specBusy = false, specStale = false, specPart = null;
   const cv = $('cv'), ctx = cv.getContext('2d');
   let li = 0, geo = null, mask = null;
@@ -201,7 +201,11 @@
     }
     if (m.type === 'state') {
       st = m;
+      const first = !phi;
       phi = m.phi; re = m.re; im = m.im;
+      // ?best in the URL: a level opens with its saved best design
+      const saved = bestDesign[bestKey(LEVELS[li])];
+      if (first && saved && /[?&]best\b/.test(location.search)) { restore(saved); return; }
       pending = pending.filter(p => p.seq > m.seq);
       for (const p of pending) if (p.type === 'stroke') applyStroke(p);
       applyKeepLocal();
